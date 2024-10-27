@@ -3,7 +3,7 @@ jQuery(document).ready(function ($) {
 
   // Function to determine if the current URL indicates a course view
   function isCoursePage() {
-    const urlFragment = window.location.hash; // Get the hash part of the URL
+    const urlFragment = window.location.hash;
     return (
       urlFragment.includes("component=course") &&
       urlFragment.includes("action=course")
@@ -12,40 +12,65 @@ jQuery(document).ready(function ($) {
 
   // Function to show the popup
   function showPopup() {
-    // Make the API call
     $.ajax({
-      type: "GET",
-      url: "/wp-admin/admin-ajax.php?action=wp_ajax_course_click",
+      url: ccpData.ajaxurl,
+      type: "POST",
       data: {
-        course_id: ccpData.currentId,
+        action: "ccp_check_course_status",
+        nonce: ccpData.nonce,
       },
-      success: function (data) {
-        // Show popup when the course page is confirmed
-        $("#course-popup").fadeIn();
-        console.log("Popup should be visible now");
+      success: function (response) {
+        console.log("Course status check response:", response);
+
+        if (response.show_popup) {
+          // Update popup content
+          $("#popup-course-id").text(response.course_id);
+          $("#popup-user-name").text(response.user_name);
+          $("#popup-course-name").text(ccpData.course_name);
+
+          // Set the appointment button URL
+          const appointmentUrl =
+            window.location.origin + ccpData.appointment_url;
+          $("#appointment-button").attr("href", appointmentUrl);
+          console.log("Setting appointment URL to:", appointmentUrl);
+
+          // Show popup
+          $("#course-popup").fadeIn();
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error("Ajax error:", error);
       },
     });
   }
 
-  // Check if the page is a course page on initial load
+  // Check on page load if URL contains component=course
   if (isCoursePage()) {
+    console.log("Course page detected, checking status...");
     showPopup();
   }
 
-  // Listen for hash changes in the URL to detect navigation
+  // Listen for hash changes
   $(window).on("hashchange", function () {
     if (isCoursePage()) {
+      console.log("URL changed to course page, checking status...");
       showPopup();
     }
   });
 
-  // Close popup when clicking the close button
+  // Handle appointment button click
+  $("#appointment-button").on("click", function (e) {
+    const appointmentUrl = window.location.origin + ccpData.appointment_url;
+    console.log("Navigating to:", appointmentUrl);
+    window.location.href = appointmentUrl;
+  });
+
+  // Close popup handlers
   $(".course-popup-close").click(function () {
     $("#course-popup").fadeOut();
     console.log("Close button clicked, popup should be hidden");
   });
 
-  // Close popup when clicking outside
   $(window).click(function (event) {
     if ($(event.target).is(".course-popup-overlay")) {
       $("#course-popup").fadeOut();

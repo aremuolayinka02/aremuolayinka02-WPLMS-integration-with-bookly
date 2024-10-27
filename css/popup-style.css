@@ -1,4 +1,4 @@
-course-popup-overlay {
+.course-popup-overlay {
     display: none;
     position: fixed;
     top: 0;
@@ -15,9 +15,27 @@ course-popup-overlay {
     margin: 15% auto;
     padding: 20px;
     width: 70%;
-    max-width: 700px;
+    max-width: 550px;
     border-radius: 5px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-20px);
+    opacity: 0;
+    animation: popupFadeIn 0.3s forwards;
+}
+
+.popup-button-wrap {
+    width: 100%;
+    height: fit-content;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@keyframes popupFadeIn {
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .course-popup-close {
@@ -27,6 +45,11 @@ course-popup-overlay {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.course-popup-close:hover {
+    color: #ff0000;
 }
 
 .course-popup-body {
@@ -34,14 +57,26 @@ course-popup-overlay {
 }
 
 .custom-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: system-ui;
+    font-weight: 600;
+    color: white;
+    font-size: 14px;
+    background: #2434e5;
+    padding: 10px 20px;
 }
 
 .custom-button:hover {
-    background-color: #45a049;
+      color: #000 !important;
+}
+
+/* Responsive styles */
+@media screen and (max-width: 768px) {
+    .course-popup-content {
+        width: 90%;
+        margin: 10% auto;
+    }
 }

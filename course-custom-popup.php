@@ -6,103 +6,115 @@ Version: 1.0
 Author: Olayinka Aremu
 */
 
-// Prevent direct access to this file
+// Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Add scripts and styles
+// In your main PHP file, modify the wp_localize_script part:
 function ccp_enqueue_scripts() {
-    // Get the current post ID
-    $current_id = is_singular() ? get_queried_object_id() : 0;
-    $saved_id = get_option('ccp_course_id');
-    
-    // Define file paths
-    $css_file = plugin_dir_path(__FILE__) . 'css/popup-style.css';
-    $js_file = plugin_dir_path(__FILE__) . 'js/popup-script.js';
-    
-    // Check if CSS file exists
-    if (file_exists($css_file)) {
-        wp_enqueue_style('course-popup-style', plugins_url('css/popup-style.css', __FILE__), array(), null);
-    }
-    
-    // Check if JS file exists
-    if (file_exists($js_file)) {
+    if (strpos($_SERVER['REQUEST_URI'], 'members-directory') !== false) {
+        wp_enqueue_style('course-popup-style', plugins_url('css/popup-style.css', __FILE__));
         wp_enqueue_script('course-popup-script', plugins_url('js/popup-script.js', __FILE__), array('jquery'), null, true);
+        
+        // Get course name
+        $course_id = get_option('ccp_course_id');
+        $course_name = get_the_title($course_id);
+        
+        wp_localize_script('course-popup-script', 'ccpData', array(
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('ccp_check_course'),
+            'saved_course_id' => $course_id,
+            'course_name' => $course_name,
+            'appointment_url' => get_option('ccp_appointment_url', '/appointment-page')
+        ));
     }
-
-    // Add debug data to JavaScript
-    wp_localize_script('course-popup-script', 'ccpData', array(
-        'currentId' => $current_id,
-        'savedId' => $saved_id,
-        'pluginUrl' => plugins_url('', __FILE__)
-    ));
 }
 add_action('wp_enqueue_scripts', 'ccp_enqueue_scripts');
 
-// Add popup HTML to footer
-function ccp_add_popup_html() {
-    $course_id = is_singular() ? get_queried_object_id() : 0;
-    $saved_course_id = get_option('ccp_course_id');
+// AJAX handler to check course status and user meta
+function ccp_check_course_status() {
+    check_ajax_referer('ccp_check_course', 'nonce');
     
-    if ($course_id == $saved_course_id) {
+    $response = array(
+        'show_popup' => false,
+        'message' => '',
+        'course_id' => '',
+        'user_name' => ''
+    );
+    
+    // Get current user
+    $current_user = wp_get_current_user();
+    if (!$current_user->ID) {
+        wp_send_json($response);
+        return;
+    }
+    
+    // Get saved course ID
+    $course_id = get_option('ccp_course_id');
+    if (!$course_id) {
+        wp_send_json($response);
+        return;
+    }
+    
+    // Check if user has access to the course and it's active
+    $user_course_status = bp_course_get_user_course_status($current_user->ID, $course_id);
+    $is_course_active = wplms_user_course_active_check($current_user->ID, $course_id);
+    
+    if ($user_course_status && $is_course_active) {
+        // Check appointment status
+        $appointment_status = get_user_meta($current_user->ID, 'appointment_status', true);
+        
+        if ($appointment_status !== 'booked') {
+            $response['show_popup'] = true;
+            $response['course_id'] = $course_id;
+            $response['user_name'] = $current_user->display_name;
+        }
+    }
+    
+    wp_send_json($response);
+}
+add_action('wp_ajax_ccp_check_course_status', 'ccp_check_course_status');
+
+
+// Modify the popup HTML:
+function ccp_add_popup_html() {
+    if (strpos($_SERVER['REQUEST_URI'], 'members-directory') !== false) {
         ?>
-        <div id="course-popup" class="course-popup-overlay" style="display: none;" role="dialog" aria-labelledby="popup-title" aria-describedby="popup-description">
+        <div id="course-popup" class="course-popup-overlay" style="display: none;">
             <div class="course-popup-content">
-                <span class="course-popup-close" role="button" tabindex="0" aria-label="Close Popup">&times;</span>
+                <span class="course-popup-close">&times;</span>
                 <div class="course-popup-body">
-                    <h2 id="popup-title">Welcome to the Course!</h2>
-                    <p id="popup-description">Current ID: <?php echo esc_html($course_id); ?></p>
-                    <p>Saved ID: <?php echo esc_html($saved_course_id); ?></p>
-                    <div class="custom-content">
-                        <p>This is a test popup to verify functionality.</p>
-                        <button class="custom-button">Test Button</button>
-                    </div>
+                    <h2>Schedule Your Appointment</h2>
+                    <p>Course ID: <span id="popup-course-id"></span></p>
+                    <p>Welcome, <span id="popup-user-name"></span>!</p>
+                    <p>Please schedule your appointment for the <b><span id="popup-course-name"></span></b> course.</p>
+                </div>
+                <div class='popup-button-wrap'>
+                    <a href="#" id="appointment-button" class="custom-button">FIX APPOINTMENT</a>
                 </div>
             </div>
         </div>
         <?php
     }
 }
-add_action('wp_footer', 'ccp_add_popup_html', 999);
+add_action('wp_footer', 'ccp_add_popup_html');
 
-// Debug function to verify scripts are loading
-function ccp_add_test_script() {
-    ?>
-    <script type="text/javascript">
-        jQuery(document).ready(function($) {
-            if (ccpData.currentId == ccpData.savedId) {
-                $('#course-popup').fadeIn();
-            }
-        });
-    </script>
-    <?php
-}
-add_action('wp_footer', 'ccp_add_test_script', 1000);
-
-// Add settings menu
-function ccp_add_settings_menu() {
-    add_options_page(
-        'Course Custom Popup Settings',
-        'Course Popup',
-        'manage_options',
-        'ccp-settings',
-        'ccp_render_settings_page'
-    );
-}
-add_action('admin_menu', 'ccp_add_settings_menu');
-
-// Render the settings page
+// Add to your settings page:
 function ccp_render_settings_page() {
     if (isset($_POST['ccp_save_settings'])) {
-        check_admin_referer('ccp_save_settings_nonce'); // Security check
+        check_admin_referer('ccp_save_settings_nonce');
         if (isset($_POST['ccp_course_id'])) {
             update_option('ccp_course_id', sanitize_text_field($_POST['ccp_course_id']));
+        }
+        if (isset($_POST['ccp_appointment_url'])) {
+            update_option('ccp_appointment_url', sanitize_text_field($_POST['ccp_appointment_url']));
         }
         echo '<div class="notice notice-success"><p>Settings saved successfully!</p></div>';
     }
     
     $course_id = get_option('ccp_course_id');
+    $appointment_url = get_option('ccp_appointment_url', '/appointment-page');
     ?>
     <div class="wrap">
         <h1>Course Custom Popup Settings</h1>
@@ -116,7 +128,16 @@ function ccp_render_settings_page() {
                     <td>
                         <input type="text" id="ccp_course_id" name="ccp_course_id" 
                                value="<?php echo esc_attr($course_id); ?>" class="regular-text">
-                        <p class="description">Enter the course ID where you want the popup to appear.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="ccp_appointment_url">Appointment Page URL</label>
+                    </th>
+                    <td>
+                        <input type="text" id="ccp_appointment_url" name="ccp_appointment_url" 
+                               value="<?php echo esc_attr($appointment_url); ?>" class="regular-text">
+                        <p class="description">Enter the URL path (e.g., /appointment-page)</p>
                     </td>
                 </tr>
             </table>
@@ -129,9 +150,14 @@ function ccp_render_settings_page() {
     <?php
 }
 
-// Cleanup on deactivation
-function ccp_deactivate() {
-    // Optional: Remove plugin settings
-    // delete_option('ccp_course_id');
+// Register the settings page
+function ccp_add_admin_menu() {
+    add_options_page(
+        'Course Custom Popup Settings', // Page title
+        'Course Popup', // Menu title
+        'manage_options', // Capability required
+        'course-popup-settings', // Menu slug
+        'ccp_render_settings_page' // Function to render the page
+    );
 }
-register_deactivation_hook(__FILE__, 'ccp_deactivate');
+add_action('admin_menu', 'ccp_add_admin_menu');
