@@ -1,0 +1,45 @@
+.return-to-dashboard {
+    text-align: center;
+    margin: 20px auto;
+    opacity: 0;
+    animation: fadeInButton 0.5s 1s forwards;
+}
+
+.return-button {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #2434e5;
+    color: white !important;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    font-family: system-ui;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.return-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(36, 52, 229, 0.2);
+    background: #1a29d1;
+}
+
+@keyframes fadeInButton {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive styles */
+@media screen and (max-width: 768px) {
+    .return-button {
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+}
