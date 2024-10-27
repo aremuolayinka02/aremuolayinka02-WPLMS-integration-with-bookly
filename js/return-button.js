@@ -11,14 +11,14 @@ jQuery(document).ready(function ($) {
         nonce: ccpReturnData.nonce,
       },
       success: function (response) {
-        console.log("Return button status check:", response);
+        // console.log("Return button status check:", response);
         if (response.success && response.data.status === "booked") {
           container.html(response.data.html);
           container.find(".return-button-wrap").fadeIn();
         }
       },
       error: function (xhr, status, error) {
-        console.error("Return button check error:", error);
+        // console.error("Return button check error:", error);
       },
     });
   }
@@ -29,9 +29,9 @@ jQuery(document).ready(function ($) {
       settings.data &&
       settings.data.indexOf("action=bookly_save_appointment") !== -1
     ) {
-      console.log(
-        "Bookly appointment completed, checking return button status..."
-      );
+    //   console.log(
+    //     "Bookly appointment completed, checking return button status..."
+    //   );
       setTimeout(checkAppointmentStatus, 1000);
     }
   });

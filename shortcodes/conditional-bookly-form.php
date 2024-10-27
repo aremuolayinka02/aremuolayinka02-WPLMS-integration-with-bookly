@@ -23,8 +23,17 @@ class CCP_Conditional_Bookly_Form_Shortcode
         // Get current user
         $current_user = wp_get_current_user();
         if (!$current_user->ID) {
-            return do_shortcode('[bookly-form service_id="1" staff_member_id="1" hide="date,week_days,time_range"]'); // Show form for non-logged in users
+            return do_shortcode('[bookly-form service_id="1" staff_member_id="1" hide="date,week_days,time_range"]');
         }
+
+        // Get course ID from URL
+        $course_id = isset($_GET['course_id']) ? sanitize_text_field($_GET['course_id']) : '';
+
+        // error_log(sprintf(
+        //     'Conditional Form Render - User: %s, Course ID: %s',
+        //     $current_user->user_login,
+        //     $course_id
+        // ));
 
         // Check appointment status
         $appointment_status = get_user_meta($current_user->ID, 'appointment_status', true);
@@ -35,10 +44,10 @@ class CCP_Conditional_Bookly_Form_Shortcode
         ob_start();
 
         if ($appointment_status === 'booked') {
-            // If appointment is booked, show the status check shortcode
             echo do_shortcode('[' . $status_check_shortcode . ']');
         } else {
-            // If not booked, show the Bookly form
+            // Add hidden input for course ID
+            echo '<input type="hidden" name="course_id" value="' . esc_attr($course_id) . '">';
             echo do_shortcode('[bookly-form service_id="1" staff_member_id="1" hide="date,week_days,time_range"]');
         }
 

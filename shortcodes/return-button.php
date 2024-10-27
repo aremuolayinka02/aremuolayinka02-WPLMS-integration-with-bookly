@@ -23,7 +23,7 @@ class CCP_Return_Button_Shortcode
     {
         // Debug: Log the attempted CSS file path
         $css_url = plugins_url('css/return-button.css', dirname(__FILE__));
-        error_log('Attempting to load CSS from: ' . $css_url);
+        // error_log('Attempting to load CSS from: ' . $css_url);
 
         // Only enqueue on pages with the shortcode or Bookly form
         if (is_page() || has_shortcode(get_post()->post_content, get_option('ccp_return_shortcode_name', 'return-to-dashboard'))) {

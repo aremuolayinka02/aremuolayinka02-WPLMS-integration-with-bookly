@@ -1,5 +1,5 @@
 jQuery(document).ready(function ($) {
-  console.log("Appointment tracker initialized");
+//   console.log("Appointment tracker initialized");
 
   // Function to get URL parameters
   function getUrlParameter(name) {
@@ -11,12 +11,10 @@ jQuery(document).ready(function ($) {
       : decodeURIComponent(results[1].replace(/\+/g, " "));
   }
 
-  // Get course ID from URL
-  const urlCourseId = getUrlParameter("course_id");
-  const savedCourseId = ccpTrackerData.saved_course_id;
-
-  console.log("URL Course ID:", urlCourseId);
-  console.log("Saved Course ID:", savedCourseId);
+  // Get course ID from URL and saved data
+  const urlCourseId =
+    getUrlParameter("course_id") || ccpTrackerData.saved_course_id;
+//   console.log("Course ID to track:", urlCourseId);
 
   // Track Bookly form submission
   $(document).ajaxSend(function (event, jqxhr, settings) {
@@ -24,19 +22,24 @@ jQuery(document).ready(function ($) {
       settings.data &&
       settings.data.indexOf("action=bookly_save_appointment") !== -1
     ) {
-      console.log("Bookly appointment save detected");
+    //   console.log("Bookly appointment save detected");
 
-      // Append course_id to the form data
-      let formData = new URLSearchParams(settings.data);
+      // Parse existing data
+      let formData = new FormData();
+      let existingData = new URLSearchParams(settings.data);
+
+      // Add existing data to FormData
+      for (let pair of existingData.entries()) {
+        formData.append(pair[0], pair[1]);
+      }
+
+      // Add course_id
       formData.append("course_id", urlCourseId);
-      settings.data = formData.toString();
 
-      console.log("Modified form data:", settings.data);
-      console.log("Course ID verification:", {
-        urlCourseId: urlCourseId,
-        savedCourseId: savedCourseId,
-        matches: urlCourseId === savedCourseId,
-      });
+      // Convert FormData back to URL encoded string
+      settings.data = new URLSearchParams(formData).toString();
+
+    //   console.log("Modified form data:", settings.data);
     }
   });
 
@@ -46,33 +49,19 @@ jQuery(document).ready(function ($) {
       settings.data &&
       settings.data.indexOf("action=bookly_save_appointment") !== -1
     ) {
-      console.log("Bookly appointment save completed");
+    //   console.log("Bookly appointment save completed");
 
       try {
         const response = JSON.parse(xhr.responseText);
         if (response.success) {
-          console.log("Appointment created successfully");
-
-          // Add return button
-          const dashboardUrl =
-            window.location.origin +
-            "/members-directory/" +
-            response.user_login +
-            "/#component=course";
-          const returnButton = `
-                        <div class="return-to-dashboard" style="text-align: center; margin-top: 20px;">
-                            <a href="${dashboardUrl}" 
-                               class="return-button" 
-                               style="display: inline-block; padding: 10px 20px; background: #2434e5; color: white; text-decoration: none; border-radius: 4px; font-weight: 600;">
-                                Return to Dashboard
-                            </a>
-                        </div>
-                    `;
-
-          $(".bookly-form").append(returnButton);
+        //   console.log("Appointment created successfully");
+          // Reload page after brief delay to show updated status
+          setTimeout(function () {
+            location.reload();
+          }, 1000);
         }
       } catch (e) {
-        console.error("Error parsing response:", e);
+        // console.error("Error parsing response:", e);
       }
     }
   });
