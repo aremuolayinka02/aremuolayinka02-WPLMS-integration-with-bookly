@@ -4,10 +4,9 @@ jQuery(document).ready(function ($) {
   // Function to determine if the current URL indicates a course view
   function isCoursePage() {
     const urlFragment = window.location.hash;
-    return (
-      urlFragment.includes("component=course") &&
-      urlFragment.includes("action=course")
-    );
+    console.log("Current URL fragment:", urlFragment);
+    // Only check for component=course
+    return urlFragment.includes("component=course");
   }
 
   // Function to show the popup
@@ -55,6 +54,7 @@ jQuery(document).ready(function ($) {
 
   // Listen for hash changes
   $(window).on("hashchange", function () {
+    console.log("Hash changed, checking if course page...");
     if (isCoursePage()) {
       console.log("URL changed to course page, checking status...");
       showPopup();
@@ -63,7 +63,12 @@ jQuery(document).ready(function ($) {
 
   // Handle appointment button click
   $("#appointment-button").on("click", function (e) {
-    const appointmentUrl = window.location.origin + ccpData.appointment_url;
+    e.preventDefault(); // Prevent default action
+    const appointmentUrl =
+      window.location.origin +
+      ccpData.appointment_url +
+      "?course_id=" +
+      $("#popup-course-id").text();
     console.log("Navigating to:", appointmentUrl);
     window.location.href = appointmentUrl;
   });
