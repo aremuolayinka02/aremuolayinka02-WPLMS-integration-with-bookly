@@ -4,19 +4,21 @@ jQuery(document).ready(function ($) {
     if (!container.length) return;
 
     $.ajax({
-      url: ccpData.ajaxurl,
+      url: ccpReturnData.ajaxurl,
       type: "POST",
       data: {
         action: "check_return_button_status",
-        nonce: ccpData.nonce,
+        nonce: ccpReturnData.nonce,
       },
       success: function (response) {
-        if (response.success) {
+        console.log("Return button status check:", response);
+        if (response.success && response.data.status === "booked") {
           container.html(response.data.html);
-          if (response.data.status === "booked") {
-            container.find(".return-button-wrap").fadeIn();
-          }
+          container.find(".return-button-wrap").fadeIn();
         }
+      },
+      error: function (xhr, status, error) {
+        console.error("Return button check error:", error);
       },
     });
   }
@@ -27,10 +29,15 @@ jQuery(document).ready(function ($) {
       settings.data &&
       settings.data.indexOf("action=bookly_save_appointment") !== -1
     ) {
+      console.log(
+        "Bookly appointment completed, checking return button status..."
+      );
       setTimeout(checkAppointmentStatus, 1000);
     }
   });
 
-  // Check status periodically
-  setInterval(checkAppointmentStatus, 5000);
+  // Initial check
+  if ($(".return-button-container").length) {
+    checkAppointmentStatus();
+  }
 });

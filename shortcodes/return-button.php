@@ -21,47 +21,71 @@ class CCP_Return_Button_Shortcode
 
     public function enqueue_assets()
     {
-        wp_enqueue_style('ccp-return-button', plugins_url('css/return-button.css', dirname(__FILE__)));
-        wp_enqueue_script(
-            'ccp-return-button',
-            plugins_url('js/return-button.js', dirname(__FILE__)),
-            array('jquery'),
-            null,
-            true
-        );
+        // Debug: Log the attempted CSS file path
+        $css_url = plugins_url('css/return-button.css', dirname(__FILE__));
+        error_log('Attempting to load CSS from: ' . $css_url);
+
+        // Only enqueue on pages with the shortcode or Bookly form
+        if (is_page() || has_shortcode(get_post()->post_content, get_option('ccp_return_shortcode_name', 'return-to-dashboard'))) {
+            wp_enqueue_style(
+                'ccp-return-button',
+                $css_url,
+                array(),
+                filemtime(plugin_dir_path(dirname(__FILE__)) . 'css/return-button.css') // Add version number
+            );
+
+            wp_enqueue_script(
+                'ccp-return-button',
+                plugins_url('js/return-button.js', dirname(__FILE__)),
+                array('jquery'),
+                null,
+                true
+            );
+
+            // Localize script with proper data
+            wp_localize_script('ccp-return-button', 'ccpReturnData', array(
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('check_return_button_status')
+            ));
+        }
     }
 
     public function check_status_ajax()
     {
-        check_ajax_referer('ccp_check_course', 'nonce');
+        check_ajax_referer('check_return_button_status', 'nonce');
 
         $current_user = wp_get_current_user();
         if (!$current_user->ID) {
-            wp_send_json_error();
+            wp_send_json_error('User not logged in');
             return;
         }
 
         $appointment_status = get_user_meta($current_user->ID, 'appointment_status', true);
 
-        wp_send_json_success(array(
-            'status' => $appointment_status,
-            'html' => $this->generate_button_html($current_user, $appointment_status)
-        ));
+        if ($appointment_status === 'booked') {
+            $dashboard_url = site_url('/members-directory/' . bp_core_get_username($current_user->ID) . '/#component=course');
+            wp_send_json_success(array(
+                'status' => 'booked',
+                'html' => $this->generate_button_html($dashboard_url)
+            ));
+        } else {
+            wp_send_json_success(array(
+                'status' => 'not-booked',
+                'html' => ''
+            ));
+        }
     }
 
-    private function generate_button_html($user, $status)
+    private function generate_button_html($dashboard_url)
     {
         ob_start();
-        if ($status === 'booked') {
-            ?>
-            <div class="return-button-wrap">
-                <a href="<?php echo esc_url(site_url('/members-directory/' . bp_core_get_username($user->ID) . '/#component=course')); ?>"
-                    class="return-dashboard-button">
-                    Return to Course Dashboard
-                </a>
+        ?>
+        <div class="return-button-wrap">
+            <a href="<?php echo esc_url($dashboard_url); ?>" class="return-dashboard-button">
+                Return to Course Dashboard
+            </a>
             </div>
             <?php
-        }
         return ob_get_clean();
     }
 
@@ -73,11 +97,18 @@ class CCP_Return_Button_Shortcode
         }
 
         $appointment_status = get_user_meta($current_user->ID, 'appointment_status', true);
+        $dashboard_url = '';
 
+        if ($appointment_status === 'booked') {
+            $dashboard_url = site_url('/members-directory/' . bp_core_get_username($current_user->ID) . '/#component=course');
+        }
+        
         ob_start();
         ?>
         <div class="return-button-container" data-status="<?php echo esc_attr($appointment_status); ?>">
-            <?php echo $this->generate_button_html($current_user, $appointment_status); ?>
+            <?php if ($appointment_status === 'booked'): ?>
+                <?php echo $this->generate_button_html($dashboard_url); ?>
+            <?php endif; ?>
         </div>
         <?php
         return ob_get_clean();

@@ -1,11 +1,17 @@
-.return-to-dashboard {
+.return-button-container {
     text-align: center;
     margin: 20px auto;
-    opacity: 0;
-    animation: fadeInButton 0.5s 1s forwards;
+    padding: 10px;
 }
 
-.return-button {
+.return-button-wrap {
+    opacity: 0;
+    animation: fadeInButton 0.5s ease forwards;
+    display: flex;
+    justify-content: center;
+}
+
+.return-dashboard-button {
     display: inline-block;
     padding: 12px 24px;
     background: #2434e5;
@@ -19,9 +25,9 @@
     border: none;
 }
 
-.return-button:hover {
+.return-dashboard-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(36, 52, 229, 0.2);
+    box-shadow: 0 4px 12px rgba(36, 52, 229, 0.3);
     background: #1a29d1;
 }
 
@@ -38,7 +44,7 @@
 
 /* Responsive styles */
 @media screen and (max-width: 768px) {
-    .return-button {
+    .return-dashboard-button {
         padding: 10px 20px;
         font-size: 13px;
     }
