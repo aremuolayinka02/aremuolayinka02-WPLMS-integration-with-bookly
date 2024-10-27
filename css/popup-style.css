@@ -56,6 +56,10 @@
     padding: 20px;
 }
 
+.popup-user-name {
+    margin-top: 15px;
+}
+
 .custom-button {
     border: none;
     border-radius: 4px;

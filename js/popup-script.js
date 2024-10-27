@@ -30,7 +30,10 @@ jQuery(document).ready(function ($) {
 
           // Set the appointment button URL
           const appointmentUrl =
-            window.location.origin + ccpData.appointment_url;
+            window.location.origin +
+            ccpData.appointment_url +
+            "?course_id=" +
+            response.course_id;
           $("#appointment-button").attr("href", appointmentUrl);
           console.log("Setting appointment URL to:", appointmentUrl);
 
